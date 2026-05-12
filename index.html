@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -360,6 +359,7 @@
 
         // --- VALIDATION HELPERS ---
         const hasAllVertices = (v) => {
+            if (!v) return false;
             if (!v.includes(',')) return false; 
             const arr = v.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
             const req = ['A','B','C','D','M','N','P','Q'];
@@ -367,12 +367,14 @@
         };
 
         const hasAllDiagonals = (v) => {
+            if (!v) return false;
             const str = v.toUpperCase();
             const checkPair = (p1, p2) => str.includes(p1) || str.includes(p2);
             return checkPair('AP','PA') && checkPair('BQ','QB') && checkPair('CM','MC') && checkPair('DN','ND');
         };
 
         const hasAllSideFaces = (v) => {
+            if (!v) return false;
             const str = v.toUpperCase().replace(/[^A-Z]/g, ' ');
             const words = str.split(/\s+/).filter(w => w.length === 4);
             const isValid = (word, c1, c2) => c1.includes(word) || c2.includes(word);
@@ -386,8 +388,25 @@
         };
 
         const hasProperties = (v) => {
+            if (!v) return false;
             const str = v.toLowerCase();
             return str.includes('chữ nhật') && str.includes('vuông');
+        };
+
+        const hasCubeBases = (v) => {
+            if (!v) return false;
+            const s = v.toUpperCase();
+            const hasPrime = s.includes("E'") && s.includes("I'") && s.includes("K'") && s.includes("F'");
+            const hasE = /E(?!')/.test(s);
+            const hasI = /I(?!')/.test(s);
+            const hasK = /K(?!')/.test(s);
+            const hasF = /F(?!')/.test(s);
+            return hasPrime && hasE && hasI && hasK && hasF;
+        };
+
+        const hasCubeEdges = (v) => {
+            if (!v) return false;
+            return v.toLowerCase().includes('bằng nhau');
         };
 
         // --- STATIONS ---
@@ -420,6 +439,7 @@
                         - Em có thể đổi thứ tự chữ cái khi đọc tên mặt, cạnh (Ví dụ mặt <i>ABNM</i> hay <i>NMAB</i> đều đúng, miễn là đọc đúng một vòng quanh mặt).<br/>
                         - Tên các <b>đỉnh</b> bắt buộc phải cách nhau bằng <b>dấu phẩy (,)</b>.<br/>
                         - Tên các <b>cạnh/mặt/đường chéo</b> có thể cách nhau bằng dấu phẩy hoặc khoảng trắng.<br/>
+                        - <b>Điều kiện qua trạm:</b> Em phải trả lời <b>ĐÚNG CẢ 6 CÂU</b> thì nút "Trạm tiếp theo" mới được mở khóa. Cố lên nhé!
                     </div>
 
                     <div className="space-y-6">
@@ -457,6 +477,24 @@
                             checkLogic={hasProperties}
                             showAlert={showAlert}
                             explanation="Chính xác hoàn toàn! Hình hộp chữ nhật được bao quanh bởi 6 <b>hình chữ nhật</b>. Hình lập phương đặc biệt hơn, được bao quanh bởi 6 <b>hình vuông</b> giống hệt nhau."
+                        />
+
+                        <SmartCheck 
+                            question="5. Quan sát hình lập phương EIKF.E'I'K'F', hãy kể tên 2 <b>MẶT ĐÁY</b> của hình này:"
+                            hint="Mặt đáy thường là mặt trên cùng và mặt dưới cùng. Bao gồm 4 chữ cái cho mỗi mặt. Chú ý các dấu phẩy (')."
+                            value={data.s1_q5} onChange={(v) => updateData('s1_q5', v)}
+                            checkLogic={hasCubeBases}
+                            showAlert={showAlert}
+                            explanation="Rất tốt! Hai mặt đáy là <b>EIKF</b> (trên) và <b>E'I'K'F'</b> (dưới)."
+                        />
+
+                        <SmartCheck 
+                            question="6. Khác với hình hộp chữ nhật, độ dài 12 cạnh của hình lập phương có đặc điểm gì?"
+                            hint="Hãy so sánh độ dài các cạnh với nhau (chúng dài ngắn ra sao?)."
+                            value={data.s1_q6} onChange={(v) => updateData('s1_q6', v)}
+                            checkLogic={hasCubeEdges}
+                            showAlert={showAlert}
+                            explanation="Hoàn toàn chính xác! 12 cạnh của hình lập phương đều <b>bằng nhau</b>."
                         />
                     </div>
                 </div>
@@ -567,14 +605,13 @@
                     let s = (val || '').toLowerCase().replace(/[\s\*\.x×,]/g, '');
                     const sorted = sortStr(s);
                     // Chấp nhận: 4a^2, a^24, 4a2, a24, 4aa, aa4
-                    return sorted === '24a^' || sorted === '24a' || sorted === '4aa';
+                    return s.includes('4') && (s.includes('a^2') || s.includes('a2') || s.includes('aa'));
                 };
 
                 const checkQ4 = (val) => {
                     let s = (val || '').toLowerCase().replace(/[\s\*\.x×,]/g, '');
-                    const sorted = sortStr(s);
-                    // Chấp nhận: a^3, a3, aaa, 3a^, 3a
-                    return sorted === '3a^' || sorted === '3a' || sorted === 'aaa';
+                    // Chấp nhận: a^3, a3, aaa
+                    return s === 'a^3' || s === 'a3' || s === 'aaa';
                 };
 
                 const isQ1Correct = checkQ1(data.s3_q1);
@@ -736,7 +773,7 @@
                         question="Bài 1: Một bể cá hình hộp chữ nhật dài 50cm, rộng 30cm, cao 40cm. Tính thể tích của bể cá đó (cm³)."
                         hint="V = a × b × h. Em lấy 50 × 30 × 40 nhé."
                         value={data.s5_q1} onChange={(v) => updateData('s5_q1', v)}
-                        checkLogic={(v) => v.includes('60000') || v.includes('60.000')}
+                        checkLogic={(v) => (v||'').includes('60000') || (v||'').includes('60.000')}
                         showAlert={showAlert}
                         explanation="Chuẩn! V = 50 × 30 × 40 = <b>60,000 cm³</b>."
                     />
@@ -745,7 +782,7 @@
                         question="Bài 2: Một khối Rubik hình lập phương có cạnh 6cm. Bạn An muốn dán giấy decal màu xung quanh 4 mặt bên. Tính diện tích giấy decal cần dùng (cm²)."
                         hint="Đây là Diện tích xung quanh (Sxq) của hình lập phương. Sxq = 4 × cạnh × cạnh."
                         value={data.s5_q2} onChange={(v) => updateData('s5_q2', v)}
-                        checkLogic={(v) => v.includes('144')}
+                        checkLogic={(v) => (v||'').includes('144')}
                         showAlert={showAlert}
                         explanation="Rất tốt! Diện tích 1 mặt = 6 × 6 = 36 cm². Giấy dán 4 mặt bên (Sxq) = 4 × 36 = <b>144 cm²</b>."
                     />
@@ -754,7 +791,7 @@
                         question="Bài 3: Một căn phòng hình hộp chữ nhật dài 6m, rộng 4m, cao 3m. Tính diện tích 4 bức tường xung quanh phía trong phòng (m²)."
                         hint="Diện tích 4 bức tường chính là Sxq. Tính Chu vi đáy trước: 2 × (6 + 4), sau đó nhân với chiều cao 3."
                         value={data.s5_q3} onChange={(v) => updateData('s5_q3', v)}
-                        checkLogic={(v) => v.includes('60')}
+                        checkLogic={(v) => (v||'').includes('60')}
                         showAlert={showAlert}
                         explanation="Hoàn hảo! Chu vi đáy = 2 × (6 + 4) = 20 m. Diện tích tường = Sxq = 20 × 3 = <b>60 m²</b>."
                     />
@@ -775,8 +812,8 @@
             const [isReady, setIsReady] = useState(false);
             
             const [studentName, setStudentName] = useState("");
-            const [currentStation, setCurrentStation] = useState(0); // 0 = Login
-            const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 phút
+            const [currentStation, setCurrentStation] = useState(0); 
+            const [timeLeft, setTimeLeft] = useState(40 * 60); // 40 phút
             const [appData, setAppData] = useState({});
             const [saveStatus, setSaveStatus] = useState("Đã lưu");
             
@@ -863,19 +900,20 @@
             };
 
             const goNext = () => {
-                /* KHÓA TRẠM 1 ĐÃ ĐƯỢC TẮT CHO MỤC ĐÍCH TEST
+                // KIỂM TRA KHÓA TRẠM 1
                 if (currentStation === 1) {
-                    const q1 = hasAllVertices(appData.s1_q1 || '');
-                    const q2 = hasAllDiagonals(appData.s1_q2 || '');
-                    const q3 = hasAllSideFaces(appData.s1_q3 || '');
-                    const q4 = hasProperties(appData.s1_q4 || '');
+                    const q1 = hasAllVertices(appData.s1_q1);
+                    const q2 = hasAllDiagonals(appData.s1_q2);
+                    const q3 = hasAllSideFaces(appData.s1_q3);
+                    const q4 = hasProperties(appData.s1_q4);
+                    const q5 = hasCubeBases(appData.s1_q5);
+                    const q6 = hasCubeEdges(appData.s1_q6);
                     
-                    if (!(q1 && q2 && q3 && q4)) {
-                        showAlert("Em phải trả lời ĐÚNG CẢ 4 CÂU ở Trạm 1 thì mới được mở khóa đi tiếp nhé! Hãy cố gắng lên!");
+                    if (!(q1 && q2 && q3 && q4 && q5 && q6)) {
+                        showAlert("Em phải trả lời ĐÚNG CẢ 6 CÂU ở Trạm 1 thì mới được mở khóa đi tiếp nhé! Hãy cố gắng lên!");
                         return;
                     }
                 }
-                */
 
                 if (currentStation < 5) {
                     setCurrentStation(prev => prev + 1);
@@ -925,7 +963,7 @@
                 );
             }
 
-            const isTrạm1Locked = false; // Tạm tắt cho quá trình test mô hình
+            const isTrạm1Locked = currentStation === 1 && !(hasAllVertices(appData.s1_q1) && hasAllDiagonals(appData.s1_q2) && hasAllSideFaces(appData.s1_q3) && hasProperties(appData.s1_q4) && hasCubeBases(appData.s1_q5) && hasCubeEdges(appData.s1_q6));
 
             // --- RENDER APP ---
             return (
@@ -940,8 +978,7 @@
                             <div className="flex gap-2">
                                 {[1,2,3,4,5].map(st => (
                                     <div key={st} 
-                                         onClick={() => { setCurrentStation(st); syncToCloud(appData, st); window.scrollTo(0,0); }}
-                                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all cursor-pointer ${st === currentStation ? 'bg-amber-400 text-indigo-900 scale-110 shadow' : st < currentStation ? 'bg-indigo-500 hover:bg-indigo-400' : 'bg-indigo-900 text-indigo-400 hover:bg-indigo-700'}`}>
+                                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${st === currentStation ? 'bg-amber-400 text-indigo-900 scale-110 shadow' : st < currentStation ? 'bg-indigo-500' : 'bg-indigo-900 text-indigo-400'}`}>
                                         {st}
                                     </div>
                                 ))}
@@ -973,8 +1010,8 @@
                                 <IconCloud /> {saveStatus}
                             </div>
 
-                            <button onClick={goNext} disabled={currentStation === 5} className="px-6 py-2.5 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow disabled:opacity-50 transition-colors">
-                                Trạm tiếp theo ➔
+                            <button onClick={goNext} disabled={currentStation === 5} className={`px-6 py-2.5 font-bold text-white rounded-lg shadow disabled:opacity-50 transition-colors ${isTrạm1Locked ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                                {isTrạm1Locked ? <><IconLock className="inline mb-1"/> Bị khóa</> : 'Trạm tiếp theo ➔'}
                             </button>
                         </div>
                     </footer>
