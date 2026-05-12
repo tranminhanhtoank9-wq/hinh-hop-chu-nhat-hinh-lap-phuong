@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -27,28 +28,47 @@
         textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .cornell-box { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        
+        /* CSS 3D Folding Net */
+        .scene-3d { perspective: 1000px; width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; }
+        .box-wrapper { position: relative; transform-style: preserve-3d; transform: rotateX(-20deg) rotateY(-30deg); transition: transform 0.1s; }
+        .face { position: absolute; transform-style: preserve-3d; border: 2px solid #4f46e5; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #312e81; opacity: 0.9; }
+        .face-bottom { background-color: #e0e7ff; transform-origin: center; }
+        .face-front { background-color: #a5b4fc; transform-origin: bottom; }
+        .face-back { background-color: #c7d2fe; transform-origin: top; }
+        .face-left { background-color: #818cf8; transform-origin: right; }
+        .face-right { background-color: #6366f1; transform-origin: left; }
+        .face-top { background-color: #4f46e5; color: white; transform-origin: top; }
+        
+        input[type=range] { accent-color: #4f46e5; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="module">
+    <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 
-        // Firebase Setup
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        window.firebaseApp = { auth, db, appId, signInWithCustomToken, signInAnonymously, onAuthStateChanged, doc, setDoc, getDoc };
-    </script>
-
-    <script type="text/babel" data-type="module">
         const { useState, useEffect, useRef } = React;
+
+        // Firebase Setup (Tích hợp cơ chế tự bảo vệ khi chạy Local)
+        let app, auth, db;
+        try {
+            const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+            if (firebaseConfigStr) {
+                const firebaseConfig = JSON.parse(firebaseConfigStr);
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                }
+            }
+        } catch (e) {
+            console.warn("Khởi tạo Firebase thất bại. Ứng dụng sẽ chạy ở chế độ Local.", e);
+        }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // --- ICONS ---
         const IconCheck = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>;
@@ -235,14 +255,14 @@
                 // Khởi tạo các nhãn (Labels) cực kỳ nổi bật kèm offset để tránh đè lên góc
                 const labelDivs = [];
                 const labelData = [
-                    { pos: vA, text: labels[0], offset: {x: -15, y: -15} }, 
-                    { pos: vB, text: labels[1], offset: {x: 15, y: -15} },
-                    { pos: vC, text: labels[2], offset: {x: 15, y: -15} }, 
-                    { pos: vD, text: labels[3], offset: {x: -15, y: -15} },
-                    { pos: vM, text: labels[4], offset: {x: -15, y: 15} }, 
-                    { pos: vN, text: labels[5], offset: {x: 15, y: 15} },
-                    { pos: vP, text: labels[6], offset: {x: 15, y: 15} }, 
-                    { pos: vQ, text: labels[7], offset: {x: -15, y: 15} }
+                    { pos: vA, text: labels[0], offset: {x: -12, y: -15} }, 
+                    { pos: vB, text: labels[1], offset: {x: 12, y: -15} },
+                    { pos: vC, text: labels[2], offset: {x: 12, y: -15} }, 
+                    { pos: vD, text: labels[3], offset: {x: -12, y: -15} },
+                    { pos: vM, text: labels[4], offset: {x: -12, y: 15} }, 
+                    { pos: vN, text: labels[5], offset: {x: 12, y: 15} },
+                    { pos: vP, text: labels[6], offset: {x: 12, y: 15} }, 
+                    { pos: vQ, text: labels[7], offset: {x: -12, y: 15} }
                 ];
 
                 labelData.forEach(item => {
@@ -305,6 +325,39 @@
             </div>;
         };
 
+        // --- CSS 3D STATIC NET COMPONENT (Trạm 3) ---
+        const StaticNet = ({ isCube }) => {
+            const a = isCube ? 100 : 120; 
+            const b = isCube ? 100 : 80;  
+            const h = isCube ? 100 : 60;  
+
+            // Hình trải phẳng nên góc = 0
+            const angle = 0;
+
+            return (
+                <div className="scene-3d mb-8 mt-4">
+                    <div className="box-wrapper" style={{ transform: `rotateX(-20deg) rotateY(-40deg) translateY(${h/2}px)` }}>
+                        {/* Đáy dưới */}
+                        <div className="face face-bottom" style={{ width: a, height: b, transform: `rotateX(90deg) translateZ(0px)` }}>Đáy dưới</div>
+                        
+                        {/* Mặt trước */}
+                        <div className="face face-front" style={{ width: a, height: h, transform: `rotateX(${90 - angle}deg) translateZ(${b/2}px) translateY(${-h/2}px)` }}>
+                            Mặt trước
+                            {/* Nắp trên */}
+                            <div className="face face-top" style={{ width: a, height: b, transform: `rotateX(${-angle}deg) translateZ(${h/2}px) translateY(${-b/2}px)` }}>Mặt trên</div>
+                        </div>
+                        
+                        {/* Mặt sau */}
+                        <div className="face face-back" style={{ width: a, height: h, transform: `rotateX(${90 + angle}deg) translateZ(${-b/2}px) translateY(${-h/2}px)` }}>Mặt sau</div>
+                        {/* Mặt trái */}
+                        <div className="face face-left" style={{ width: b, height: h, transform: `rotateY(90deg) rotateX(${-angle}deg) translateZ(${-a/2}px) translateY(${-h/2}px)` }}>Trái</div>
+                        {/* Mặt phải */}
+                        <div className="face face-right" style={{ width: b, height: h, transform: `rotateY(90deg) rotateX(${angle}deg) translateZ(${a/2}px) translateY(${-h/2}px)` }}>Phải</div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- VALIDATION HELPERS ---
         const hasAllVertices = (v) => {
             if (!v.includes(',')) return false; 
@@ -337,8 +390,6 @@
             return str.includes('chữ nhật') && str.includes('vuông');
         };
 
-        const formatEq = (v) => (v||'').toLowerCase().replace(/\s+/g, '').replace(/×/g, '*').replace(/\./g, '*');
-
         // --- STATIONS ---
 
         // TRẠM 1: QUAN SÁT (TĨNH)
@@ -369,7 +420,6 @@
                         - Em có thể đổi thứ tự chữ cái khi đọc tên mặt, cạnh (Ví dụ mặt <i>ABNM</i> hay <i>NMAB</i> đều đúng, miễn là đọc đúng một vòng quanh mặt).<br/>
                         - Tên các <b>đỉnh</b> bắt buộc phải cách nhau bằng <b>dấu phẩy (,)</b>.<br/>
                         - Tên các <b>cạnh/mặt/đường chéo</b> có thể cách nhau bằng dấu phẩy hoặc khoảng trắng.<br/>
-                        - <b>Điều kiện qua trạm:</b> Em phải trả lời <b>ĐÚNG CẢ 4 CÂU</b> thì nút "Trạm tiếp theo" mới được mở khóa. Cố lên nhé!
                     </div>
 
                     <div className="space-y-6">
@@ -383,7 +433,7 @@
                         />
 
                         <SmartCheck 
-                            question="2. <b>Đường chéo</b> là đoạn thẳng nối hai đỉnh đối diện nhau và đi xuyên qua không gian bên trong hình khối. <br/>Trên mô hình, các đường chéo đã được vẽ bằng nét đứt màu đỏ. Hãy quan sát và gọi tên tất cả 4 đường chéo đó:"
+                            question="2. <b>Đường chéo</b> là đoạn thẳng nối hai đỉnh đối diện nhau và đi xuyên qua không gian bên trong hình khối. <br/>Trên mô hình 3D, các đường chéo đã được vẽ bằng nét đứt màu đỏ. Hãy quan sát và gọi tên tất cả 4 đường chéo đó:"
                             hint="Nhìn rõ bên trong hình, em sẽ thấy các đoạn: AP, BQ, CM, DN. Em hãy nhập đủ 4 đoạn thẳng này nhé."
                             value={data.s1_q2} onChange={(v) => updateData('s1_q2', v)}
                             checkLogic={hasAllDiagonals}
@@ -725,16 +775,19 @@
             const [isReady, setIsReady] = useState(false);
             
             const [studentName, setStudentName] = useState("");
-            const [currentStation, setCurrentStation] = useState(0); 
-            const [timeLeft, setTimeLeft] = useState(45 * 60); 
+            const [currentStation, setCurrentStation] = useState(0); // 0 = Login
+            const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 phút
             const [appData, setAppData] = useState({});
             const [saveStatus, setSaveStatus] = useState("Đã lưu");
             
             const [modal, setModal] = useState({ isOpen: false, message: '' });
 
-            const { auth, db, appId, signInAnonymously, signInWithCustomToken, onAuthStateChanged, doc, setDoc, getDoc } = window.firebaseApp;
-
             useEffect(() => {
+                if (!auth || !db) {
+                    setIsReady(true);
+                    return;
+                }
+
                 const initFirebase = async () => {
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -775,7 +828,7 @@
             }, [currentStation, timeLeft]);
 
             const syncToCloud = async (newData, newStation) => {
-                if (!user) return;
+                if (!user || !db) return;
                 setSaveStatus("Đang lưu...");
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'math_lesson_v2', 'progress');
